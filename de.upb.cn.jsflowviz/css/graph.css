@@ -1,0 +1,19 @@
+  .count1 {
+      stroke: #0F0;
+  }
+  .count2 {
+      stroke: #F00;
+  }
+  .count3 {
+      stroke: #00F;
+  }
+  .count4 {
+      stroke: #F0F;
+  }
+  .link {
+      fill: none;
+  }
+  .node circle {
+      stroke: #000;
+      stroke-width: 1.5px;
+  }
