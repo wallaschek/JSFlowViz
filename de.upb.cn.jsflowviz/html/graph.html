@@ -13,22 +13,34 @@ function update_switches(switches) {
 
 	var svg = d3.select("#graph")
 	
-	
+	switches = switches.map(function(d){return String(d)})
 	svg.selectAll("circle").data(switches).enter()
    								.append("svg:circle")
    									.attr("r", 10)
    									.attr("cx", function(d) {return 30*d})
    									.attr("cy", function(d) {return 30*d}) 
+   									.attr("dpid", function(d) {return d});
 }
+function draw_path(link) {
+	link.attr("d","M"+link.source.x+","+link.source.y+"L"+link.target.x+","+link.target.y);
+}
+
+function Link(source,target) {
+	this.source = source;
+	this.target = target;
+}
+	
+
 function update_links(links) {
-var force = d3.layout.force()
+	var force = d3.layout.force()
 	.size([600,600])
-	.charge(-400)
-	var svg = d3.select("#graph")
-	var circles = svg.selectAll("circle")[0]
-	force.nodes(circles)
-	     .links(translate_links(links))
-	     .start()
+	.charge(-400);
+	var svg = d3.select("#graph");
+	var circles = svg.selectAll("circle");
+	svg.selectAll(".link").data(links).enter()
+			.append("path")
+			.attr("class","link")
+			.each(function(d){alert("M"+d3.select("#graph").selectAll("circle").data([String(d.source)])[0][0].cx.baseVal.value+","+d3.select("#graph").selectAll("circle").data([String(d.source)])[0][0].cy.baseVal.value+"L"+d3.select("#graph").selectAll("circle").data([String(d.target)])[0][0].cx.baseVal.value+","+d3.select("#graph").selectAll("circle").data([String(d.target)])[0][0].cy.baseVal.value)});
 }
 
 function translate_links(links) {
