@@ -7,28 +7,58 @@ window.onload=function(){
     d3.json("/wm/jsflowviz/json/switches.do",update_switches);
 	d3.json("/wm/jsflowviz/json/links.do",update_links);
     */
+    update_layout();
     d3.json("switches.do.json",update_switches);
 	d3.json("links.do.json",update_links);
 }
 
 var links;
 var switches = {};
-
+var force;
 function update_layout() {
-    var force = d3.layout.force()
-                .size([600, 600])
+    this.force = d3.layout.force()
+                .size([1200, 1200])
                 //.charge(-400)
                 .nodes(switches)
                 .links(links)
-                .on("tick",function(d) { sync_circles() });
-    force.start();
+                .distance("100")
+                .on("tick",function(d) { sync_circles(); sync_links() });
+    if(len(switches) > 0 ) {
+        this.force.start();
+    }
+    this.force.drag().on("dragstart",drag_start);
+    this.force.drag().on("drag",sync_dragging);
+    this.force.drag().on("dragstart",drag_stop);
+    var svg = d3.select("#graph").selectAll("circle").call(this.force.drag);
+}
+function len(aarray) {
+    var i = 0;
+    for (key in aarray) {
+        i++;
+    }
+    return i;
 }
 
+function drag_start() {
+    this.force.stop()
+}
+function drag_stop() {
+    this.force.resume()
+}
+function sync_dragging(d,i) {
+    d.x+=d3.event.dx;
+    d.y+=d3.event.dy;
+}
 function sync_circles() {
     var svg = d3.select("#graph")
 	svg.selectAll("circle").data(aarray_to_list(this.switches),function(d){return d.dpid})
    									.attr("cx",  function(d,i) {return d.x})
    									.attr("cy", function(d,i) {return d.y})
+}
+function sync_links() {
+    var svg = d3.select("#graph")
+	svg.selectAll("path").data(this.links,function(d){return String(d.source.dpid)+String(d.target.dpid)})
+   									.attr("d",function(d){return get_path(d)});
 }
 function Switch(dpid) {
     this.dpid = dpid;
@@ -50,6 +80,8 @@ function update_switches(switches) {
    								.append("svg:circle")
    									.attr("r", 10)
    									.attr("cx",  function(d,i) {return d.x})
+                                    .attr("x",100)
+                                    .attr("y",100)
    									.attr("cy", function(d,i) {return d.y})
                                     .attr("dpid", function(d,i) {return d.dpid});
     var x = 1;
@@ -79,6 +111,7 @@ function update_links(links) {
 	svg.selectAll(".link").data(this.links,function(d){return String(d.source.dpid)+String(d.target.dpid)}).enter()
 			.append("path")
 			.attr("class","link")
+            .attr("style","stroke:#666")
 			.attr("d",function(d){return get_path(d)});
     update_layout();
 }
@@ -97,6 +130,6 @@ function translate_links(links) {
 </head>
 <body>
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-<svg id="graph" style="width:100%, height:100%"></svg>
+<svg id="graph" width="100%", height="100%"></svg>
 </body>
 </html>
