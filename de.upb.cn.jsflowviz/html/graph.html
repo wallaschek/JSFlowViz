@@ -27,10 +27,12 @@ function update_layout() {
         this.force.start();
     }
     this.force.drag().on("dragstart",drag_start);
-    this.force.drag().on("drag",sync_dragging);
+    this.force.drag().on("drag",sync_dragging); 
     this.force.drag().on("dragstart",drag_stop);
     var svg = d3.select("#graph").selectAll("circle").call(this.force.drag);
 }
+
+
 function len(aarray) {
     var i = 0;
     for (key in aarray) {
@@ -39,11 +41,59 @@ function len(aarray) {
     return i;
 }
 
+function show_switch_info(sw) {
+    var svg = d3.select("#graph")
+    svg.append("rect").attr("x",sw.x)
+                   .attr("y",sw.y)
+                   .attr("width","100")
+                   .attr("height","50")
+                   .attr("class","ib-"+sw.dpid)
+                   .attr("fill","none")
+                   .attr("stroke","blue")
+    svg.append("text")
+        .attr("x",sw.x+5)
+        .attr("y",sw.y)
+        .style("stroke-width", 1)
+        .attr("color","#000")
+        .attr("class","ib-"+sw.dpid)
+        .call(lb,switch_info(sw))
+    svg.selectAll(".ib-"+sw.dpid).selectAll("tspan").attr("x",sw.x+5)
+}
+
+function hide_switch_info(sw) {
+    var svg = d3.select("#graph")
+    svg.selectAll(".ib-"+sw.dpid).remove()
+
+}
+function lb(text_elem,text) {
+    /*
+     * Create several tspan elements to replace linebreaks.
+     * leaves a 1.2em gap at top.
+     */
+    lines = text.split(/\n/).reverse();
+    while(line = lines.pop()) {
+        text_elem.append("tspan")
+            .attr("x",0)
+            .attr("dy","1.2em")
+            .text(line)
+    }
+}
+
+function switch_info(sw) {
+    /*
+     * Parse switch obj into string here
+     */
+     return "dpid: "+sw.dpid+"\nports: ?"
+}
+
+
+
+
 function drag_start() {
-    this.force.stop()
+    force.stop()
 }
 function drag_stop() {
-    this.force.resume()
+    force.resume()
 }
 function sync_dragging(d,i) {
     d.x+=d3.event.dx;
@@ -83,7 +133,10 @@ function update_switches(switches) {
                                     .attr("x",100)
                                     .attr("y",100)
    									.attr("cy", function(d,i) {return d.y})
-                                    .attr("dpid", function(d,i) {return d.dpid});
+                                    .attr("dpid", function(d,i) {return d.dpid})
+                                    .on("mouseover",function(d) {show_switch_info(d) })
+                                    .on("mouseout",function(d) {hide_switch_info(d) })
+                                    ;
     var x = 1;
 }
 function get_path(l) {
@@ -97,6 +150,9 @@ function Link(source,target) {
 
 
 function aarray_to_list(aarray) {
+    /*
+     * Create list from associative array
+     */
     l = [];
     for (key in aarray) {
         l.push(aarray[key]);
@@ -117,6 +173,9 @@ function update_links(links) {
 }
 
 function translate_links(links) {
+    /*
+     * Translate json names into obj references
+     */
     nlinks=[]
     for (var key in links) {
         var source = switches[String(links[key].source)];
