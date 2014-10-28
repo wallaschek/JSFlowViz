@@ -22,7 +22,12 @@ var flows = [];
 var switches = {};
 var force;
 var flow_line_fun;
+var flow_colors;
 
+function update_flow_color_scale() {
+    this.flow_colors= d3.scale.category20()
+                                .domain(this.flows);
+}
 function update_layout() {
     this.force = d3.layout.force()
                 .size([1200, 1200])
@@ -201,19 +206,27 @@ function translate_links(links) {
 function update_flows(flows) {
     translate_flows(flows);
     hash_flows(flows);
+    add_toString(flows);
     add_scatter_offsets(flows,10,10);
     this.flows = flows;
+    update_flow_color_scale();
 	var svg = d3.select("#graph");
 	var circles = svg.selectAll("circle");
 	svg.selectAll(".flow").data(flows,function(d){return d.hash}).enter()
 			.append("path")
 			.attr("class","flow")
-            .attr("style","stroke:#606; fill:none")
+            .style("fill","none")
+            .style("stroke",function(d){return flow_colors(d)})
 			//.attr("d",function(d){return get_flow_path(d)});
             .attr("d",function(d){return flow_line_fun(d.path.map(function(e,i){return {"x":e.x+d.scatter_offsets[i].x,"y":e.y+d.scatter_offsets[i].y};}))});
     update_layout();
 }
 
+function add_toString(flows) {
+    for (var key in flows) {
+        flows[key].toString = function(){return this.hash};
+    }
+}
 
 function add_scatter_offsets(flows,maxx,maxy) {
     for(var x in flows) {
