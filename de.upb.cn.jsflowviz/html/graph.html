@@ -10,11 +10,19 @@ window.onload=function(){
     update_layout();
     d3.json("switches.do.json",update_switches);
 	d3.json("links.do.json",update_links);
+    d3.json("flows.json",update_flows);
+    this.flow_line_fun = d3.svg.line()
+                    .x(function(d){return d.x})
+                    .y(function(d){return d.y})
+                    .interpolate("cardinal");
 }
 
 var links;
+var flows = [];
 var switches = {};
 var force;
+var flow_line_fun;
+
 function update_layout() {
     this.force = d3.layout.force()
                 .size([1200, 1200])
@@ -22,7 +30,7 @@ function update_layout() {
                 .nodes(switches)
                 .links(links)
                 .distance("100")
-                .on("tick",function(d) { sync_circles(); sync_links() });
+                .on("tick",function(d) { sync_circles(); sync_links(); sync_flows() });
     if(len(switches) > 0 ) {
         this.force.start();
     }
@@ -107,8 +115,13 @@ function sync_circles() {
 }
 function sync_links() {
     var svg = d3.select("#graph")
-	svg.selectAll("path").data(this.links,function(d){return String(d.source.dpid)+String(d.target.dpid)})
+	svg.selectAll(".link").data(this.links,function(d){return String(d.source.dpid)+String(d.target.dpid)})
    									.attr("d",function(d){return get_path(d)});
+}
+function sync_flows() {
+    var svg = d3.select("#graph");
+	svg.selectAll(".flow").data(this.flows,function(d){return d.hash})
+   									.attr("d",function(d){return flow_line_fun(d.path.map(function(e,i){return {"x":e.x+d.scatter_offsets[i].x,"y":e.y+d.scatter_offsets[i].y};}))});
 }
 function Switch(dpid) {
     this.dpid = dpid;
@@ -183,6 +196,61 @@ function translate_links(links) {
         nlinks.push(new Link(source,target))
     }
     return nlinks
+}
+
+function update_flows(flows) {
+    translate_flows(flows);
+    hash_flows(flows);
+    add_scatter_offsets(flows,10,10);
+    this.flows = flows;
+	var svg = d3.select("#graph");
+	var circles = svg.selectAll("circle");
+	svg.selectAll(".flow").data(flows,function(d){return d.hash}).enter()
+			.append("path")
+			.attr("class","flow")
+            .attr("style","stroke:#606; fill:none")
+			//.attr("d",function(d){return get_flow_path(d)});
+            .attr("d",function(d){return flow_line_fun(d.path.map(function(e,i){return {"x":e.x+d.scatter_offsets[i].x,"y":e.y+d.scatter_offsets[i].y};}))});
+    update_layout();
+}
+
+
+function add_scatter_offsets(flows,maxx,maxy) {
+    for(var x in flows) {
+        flows[x].scatter_offsets = []
+        for (key in flows[x].path) {
+            flows[x].scatter_offsets[key]={"x": (Math.random()*2-1)*maxx, "y": (Math.random()*2-1)*maxy};
+        }
+    }
+    var x = 0;
+}
+function hash_str(str)  {
+  var hash = 0, i, chr, len;
+  if (str.length == 0) return hash;
+  for (i = 0, len = str.length; i < len; i++) {
+    chr   = str.charCodeAt(i);
+    hash  = ((hash << 5) - hash) + chr;
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash;
+};
+function hash_flows(flows) {
+    for (var key in flows) {
+        flows[key].hash = hash_str(flows[key].name) //TODO: real hash
+    }
+}
+
+function translate_flows(flows) {
+    /*
+     * translates switch references in json flow obj into obj references
+     */
+    for (var key in flows) {
+        var path = flows[key].path
+        for (var sw in path) {
+            path[sw] = switches[String(path[sw])]
+        }
+    }
+    return flows
 }
 
 </script>
