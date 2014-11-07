@@ -40,9 +40,9 @@ var scatter_max = 15;
 
 function poll_all() {
     update_layout();
-    d3.json("switches.do.json",update_switches);
-	d3.json("links.do.json",update_links);
-    d3.json("flows.json",update_flows);
+    d3.json("/wm/jsflowviz/json/switches.do",update_switches);
+	d3.json("/wm/jsflowviz/json/links.do",update_links);
+    //d3.json("flows.json",update_flows);
 }
 function update_flow_color_scale() {
     this.flow_colors= d3.scale.category20()
@@ -150,10 +150,10 @@ function sync_flows() {
 }
 function Switch(dpid) {
     this.dpid = dpid;
-    this.x = dpid*60;
-    this.y = dpid*60;
-    this.px = dpid*60;
-    this.py = dpid*60;
+    this.x = Math.random()*500;
+    this.y = Math.random()*500;
+    this.px = this.x;
+    this.py = this.y;
     this.fixed = false;
     this.weight = 2;
 
@@ -164,7 +164,12 @@ function update_switches(switches) {
         switches[key] = new Switch(switches[key])
     }
 	var svg = d3.select("#graph")
-	svg.selectAll("circle").data(aarray_to_list(switches),function(d){return d.dpid}).enter().call(function (d) {add_switches(d)});
+	var enter = svg.selectAll("circle").data(aarray_to_list(switches),function(d){return d.dpid}).enter();
+	for (var x in enter[0]) {
+		if(! isNaN(x)) {
+			this.switches[String(enter[0][x].__data__.dpid)] = new Switch(enter[0][x].__data__.dpid);
+		}
+	}
     svg.selectAll("circle").data(aarray_to_list(this.switches),function(d){return d.dpid}).enter()
    								.append("svg:circle")
    									.attr("r", switch_radius)
@@ -180,10 +185,11 @@ function update_switches(switches) {
     var x = 1;
 }
 
+
 function add_switches(sw) {
     for (var key in sw) {
         var x = sw[key];
-        this.switches[x.dpid]=x;
+        switches[String(x.dpid)]=x;
     }
 }
 function get_path(l) {
