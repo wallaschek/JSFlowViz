@@ -1,16 +1,27 @@
 <html>
 <head>
+<style type="text/css">
+.link { 
+    stroke: black;
+    stroke-width: 5px;
+    stroke-dasharray: 5;
+}
+.flow {
 
+}
+
+.switch {
+    fill: white;
+    stroke: black;
+}
+</style>
 <script type='text/javascript'>
 window.onload=function(){
 	/*
     d3.json("/wm/jsflowviz/json/switches.do",update_switches);
 	d3.json("/wm/jsflowviz/json/links.do",update_links);
     */
-    update_layout();
-    d3.json("switches.do.json",update_switches);
-	d3.json("links.do.json",update_links);
-    d3.json("flows.json",update_flows);
+    poll_all();
     this.flow_line_fun = d3.svg.line()
                     .x(function(d){return d.x})
                     .y(function(d){return d.y})
@@ -24,6 +35,15 @@ var force;
 var flow_line_fun;
 var flow_colors;
 
+var switch_radius=20;
+var scatter_max = 15;
+
+function poll_all() {
+    update_layout();
+    d3.json("switches.do.json",update_switches);
+	d3.json("links.do.json",update_links);
+    d3.json("flows.json",update_flows);
+}
 function update_flow_color_scale() {
     this.flow_colors= d3.scale.category20()
                                 .domain(this.flows);
@@ -130,10 +150,10 @@ function sync_flows() {
 }
 function Switch(dpid) {
     this.dpid = dpid;
-    this.x = dpid*30;
-    this.y = dpid*30;
-    this.px = dpid*30;
-    this.py = dpid*30;
+    this.x = dpid*60;
+    this.y = dpid*60;
+    this.px = dpid*60;
+    this.py = dpid*60;
     this.fixed = false;
     this.weight = 2;
 
@@ -141,21 +161,30 @@ function Switch(dpid) {
 
 function update_switches(switches) {
     for (key in switches) {
-        this.switches[String(switches[key])] = new Switch(switches[key])
+        switches[key] = new Switch(switches[key])
     }
 	var svg = d3.select("#graph")
-	svg.selectAll("circle").data(aarray_to_list(this.switches),function(d){return d.dpid}).enter()
+	svg.selectAll("circle").data(aarray_to_list(switches),function(d){return d.dpid}).enter().call(function (d) {add_switches(d)});
+    svg.selectAll("circle").data(aarray_to_list(this.switches),function(d){return d.dpid}).enter()
    								.append("svg:circle")
-   									.attr("r", 10)
+   									.attr("r", switch_radius)
    									.attr("cx",  function(d,i) {return d.x})
                                     .attr("x",100)
                                     .attr("y",100)
+                                    .attr("class","switch")
    									.attr("cy", function(d,i) {return d.y})
                                     .attr("dpid", function(d,i) {return d.dpid})
                                     .on("mouseover",function(d) {show_switch_info(d) })
                                     .on("mouseout",function(d) {hide_switch_info(d) })
                                     ;
     var x = 1;
+}
+
+function add_switches(sw) {
+    for (var key in sw) {
+        var x = sw[key];
+        this.switches[x.dpid]=x;
+    }
 }
 function get_path(l) {
     return "M"+l.source.x+","+l.source.y+"L"+l.target.x+","+l.target.y;
@@ -185,7 +214,6 @@ function update_links(links) {
 	svg.selectAll(".link").data(this.links,function(d){return String(d.source.dpid)+String(d.target.dpid)}).enter()
 			.append("path")
 			.attr("class","link")
-            .attr("style","stroke:#666")
 			.attr("d",function(d){return get_path(d)});
     update_layout();
 }
@@ -207,7 +235,7 @@ function update_flows(flows) {
     translate_flows(flows);
     hash_flows(flows);
     add_toString(flows);
-    add_scatter_offsets(flows,10,10);
+    add_scatter_offsets(flows,scatter_max,scatter_max);
     this.flows = flows;
     update_flow_color_scale();
 	var svg = d3.select("#graph");
@@ -269,6 +297,7 @@ function translate_flows(flows) {
 </script>
 </head>
 <body>
+    <form><input value="Update" type="button" onclick="poll_all();"></form>
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <svg id="graph" width="100%", height="100%"></svg>
 </body>
