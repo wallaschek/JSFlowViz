@@ -2,7 +2,10 @@ package de.upb.cn.jsflowviz;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
+
+import de.upb.cn.jsflowviz.JSONProvider.SwFlowTuple;
 
 import net.beaconcontroller.core.IOFSwitch;
 import net.beaconcontroller.topology.LinkTuple;
@@ -31,5 +34,21 @@ public class JSONConverter {
 	}
 	private static LinkTuple swap(LinkTuple p) {
 		return new LinkTuple(p.getDst(), p.getSrc());
+	}
+	
+	public static String flows(Set<LinkedList<SwFlowTuple>> flows) {
+		//[{ "name": "hans","path": [1,2,3]},{ "name": "horst","path": [2,3,4]}]
+		String str = "[";
+		for(LinkedList<SwFlowTuple> flow : flows) {
+			str += String.format("{ \"hash\": %d, \"bytes\": %d, \"path\": [",flow.get(0).getFlow().getMatch().hashCode(),flow.get(0).getFlow().getByteCount());
+			for(SwFlowTuple tup : flow) {
+				str+=String.format("%d,",tup.getSw().getId());
+			}
+			str=str.substring(0, str.length()-1)+" ] },";
+		}
+		if(str.length()>1)
+			str=str.substring(0, str.length()-1);
+		str += "]";
+		return str;
 	}
 }

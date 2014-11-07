@@ -42,6 +42,7 @@ function poll_all() {
     update_layout();
     d3.json("/wm/jsflowviz/json/switches.do",update_switches);
 	d3.json("/wm/jsflowviz/json/links.do",update_links);
+	d3.json("/wm/jsflowviz/json/flows.do",update_flows);
     //d3.json("flows.json",update_flows);
 }
 function update_flow_color_scale() {
@@ -170,6 +171,7 @@ function update_switches(switches) {
 			this.switches[String(enter[0][x].__data__.dpid)] = new Switch(enter[0][x].__data__.dpid);
 		}
 	}
+	svg.selectAll("circle").data(aarray_to_list(this.switches),function(d){return d.dpid}).exit().remove()
     svg.selectAll("circle").data(aarray_to_list(this.switches),function(d){return d.dpid}).enter()
    								.append("svg:circle")
    									.attr("r", switch_radius)
@@ -217,6 +219,7 @@ function update_links(links) {
     this.links = translate_links(links);
 	var svg = d3.select("#graph");
 	var circles = svg.selectAll("circle");
+	svg.selectAll(".link").data(this.links,function(d){return String(d.source.dpid)+String(d.target.dpid)}).exit().remove()
 	svg.selectAll(".link").data(this.links,function(d){return String(d.source.dpid)+String(d.target.dpid)}).enter()
 			.append("path")
 			.attr("class","link")
@@ -239,16 +242,18 @@ function translate_links(links) {
 
 function update_flows(flows) {
     translate_flows(flows);
-    hash_flows(flows);
+    //hash_flows(flows);
     add_toString(flows);
     add_scatter_offsets(flows,scatter_max,scatter_max);
     this.flows = flows;
     update_flow_color_scale();
 	var svg = d3.select("#graph");
 	var circles = svg.selectAll("circle");
+	svg.selectAll(".flow").data(flows,function(d){return d.hash}).exit().remove();
 	svg.selectAll(".flow").data(flows,function(d){return d.hash}).enter()
 			.append("path")
 			.attr("class","flow")
+            .style("stroke-width",function(d){return Math.min(Math.max(1,d.bytes/(1024*1024)),5)})
             .style("fill","none")
             .style("stroke",function(d){return flow_colors(d)})
 			//.attr("d",function(d){return get_flow_path(d)});
@@ -283,7 +288,7 @@ function hash_str(str)  {
 };
 function hash_flows(flows) {
     for (var key in flows) {
-        flows[key].hash = hash_str(flows[key].name) //TODO: real hash
+        flows[key].hash = hash_str(String(flows[key].path)) //TODO: real hash
     }
 }
 
