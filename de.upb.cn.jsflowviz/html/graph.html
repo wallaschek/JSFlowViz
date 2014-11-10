@@ -52,7 +52,8 @@ function update_flow_color_scale() {
 function update_layout() {
     this.force = d3.layout.force()
                 .size([1200, 1200])
-                //.charge(-400)
+                .charge(-400)
+                .friction(0.1)
                 .nodes(switches)
                 .links(links)
                 .distance("100")
@@ -62,7 +63,7 @@ function update_layout() {
     }
     this.force.drag().on("dragstart",drag_start);
     this.force.drag().on("drag",sync_dragging); 
-    this.force.drag().on("dragstart",drag_stop);
+    this.force.drag().on("dragend",drag_stop);
     var svg = d3.select("#graph").selectAll("circle").call(this.force.drag);
 }
 
@@ -123,13 +124,16 @@ function switch_info(sw) {
 
 
 
-function drag_start() {
-    force.stop()
+function drag_start(d) {
+    
+    d.fixed=true;
 }
-function drag_stop() {
-    force.resume()
+function drag_stop(d) {
+    force.stop();
 }
 function sync_dragging(d,i) {
+	this.fixed=true;
+	d.fixed=true;
     d.x+=d3.event.dx;
     d.y+=d3.event.dy;
 }
@@ -155,7 +159,6 @@ function Switch(dpid) {
     this.y = Math.random()*500;
     this.px = this.x;
     this.py = this.y;
-    this.fixed = false;
     this.weight = 2;
 
 }
@@ -305,10 +308,27 @@ function translate_flows(flows) {
     return flows
 }
 
+
+function timer_poll() {
+	poll_all();
+	set_poll_int();
+	return true;
+}
+
+function set_poll_int() {
+	if(d3.select("#pollint").property("value")!="0") {
+		d3.timer(timer_poll,parseInt(d3.select("#pollint").property("value"))*1000);
+	}
+}
+
+function abort_poll() {
+	d3.select("#pollint").property("value","0");
+}
+
 </script>
 </head>
 <body>
-    <form><input value="Update" type="button" onclick="poll_all();"></form>
+    <form><input value="Update" type="button" onclick="poll_all();"><br><input value="0" size=4 type="text" onchange="set_poll_int();" id="pollint"><input type="button" value="Stop" onclick="abort_poll()"</form>
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <svg id="graph" width="100%", height="100%"></svg>
 </body>
