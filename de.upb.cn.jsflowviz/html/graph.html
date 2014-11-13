@@ -139,19 +139,69 @@ function sync_dragging(d,i) {
 }
 function sync_circles() {
     var svg = d3.select("#graph")
-	svg.selectAll("circle").data(aarray_to_list(this.switches),function(d){return d.dpid})
+    /*
+     * attr is eating cpu like hell. however i found no way to improve this.
+     * I tried linking the Switch objects to their corresponding circles
+     * and setting the value of the attribute by hand, however this showed no improvement
+     */
+    var sws = filter_unchanged_pos(aarray_to_list(this.switches)); //filter switches which positions have not significantly changed
+    this.uswitches = sws; //save list of switches which position has changed for sync_link method
+	svg.selectAll("circle").data(sws,function(d){return d.dpid})
    									.attr("cx",  function(d,i) {return d.x})
-   									.attr("cy", function(d,i) {return d.y})
+   									.attr("cy", function(d,i) {return d.y});
+	set_new_pos(sws); //update switch positions for filter_unchanged_pos
+   									
 }
+
+
+function filter_unchanged_pos(sws) {
+	/*
+	 * returns list of switches which positions have significantly changed
+	 * checks difference between rpx/rpy (real previous x/y as px/py are taken by d3)
+	 * rpx/rpy get set by set_new_pos
+	 */
+	var nl = []
+	for (var key in sws) {
+		if((sws[key].rpx != Math.round(sws[key].x)) || (sws[key].rpy != Math.round(sws[key].y))) {
+			nl.push(sws[key]);
+		}
+	}
+	return nl;
+}
+
+function set_new_pos(sws) {
+	/*
+	 * sets rpx/rpy values  needed by filter_unchanged_pos
+	 */
+	for(var key in sws) {
+		sws[key].rpx = Math.round(sws[key].x);
+		sws[key].rpy = Math.round(sws[key].y);
+	}
+}
+
 function sync_links() {
     var svg = d3.select("#graph")
-	svg.selectAll(".link").data(this.links,function(d){return String(d.source.dpid)+String(d.target.dpid)})
+    var lks = filter_links(this.links); // only update links of switches which positions have changed
+	svg.selectAll(".link").data(lks,function(d){return String(d.source.dpid)+String(d.target.dpid)})
    									.attr("d",function(d){return get_path(d)});
+}
+
+function filter_links(lks) {
+	var nlks = [];
+	for (var key in this.uswitches) {
+		for (var key2 in lks) {
+			if((this.uswitches[key].dpid==lks[key2].source.dpid) || (this.uswitches[key].dpid==lks[key2].target.dpid)) {
+				nlks.push(lks[key2]);
+			}
+		}
+	}
+	return nlks;
 }
 function sync_flows() {
     var svg = d3.select("#graph");
 	svg.selectAll(".flow").data(this.flows,function(d){return d.hash})
-   									.attr("d",function(d){return flow_line_fun(d.path.map(function(e,i){return {"x":e.x+d.scatter_offsets[i].x,"y":e.y+d.scatter_offsets[i].y};}))});
+   									.attr("d",function(d){return flow_line_fun(d.path.map(function(e,i){return {"x":e.x+d.scatter_offsets[i].x,"y":e.y+d.scatter_offsets[i].y};}))})
+   									.style("stroke-width",function(d){return Math.min(Math.max(1,d.bytes/(1024*1024)),5)});
 }
 function Switch(dpid) {
     this.dpid = dpid;
