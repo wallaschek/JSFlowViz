@@ -14,6 +14,10 @@
     fill: white;
     stroke: black;
 }
+
+.controls {
+	font-size: small;
+}
 </style>
 <script type='text/javascript'>
 window.onload=function(){
@@ -26,6 +30,7 @@ window.onload=function(){
                     .x(function(d){return d.x})
                     .y(function(d){return d.y})
                     .interpolate("cardinal");
+	abort_poll();
 }
 
 var links;
@@ -83,12 +88,13 @@ function show_switch_info(sw) {
                    .attr("width","100")
                    .attr("height","50")
                    .attr("class","ib-"+sw.dpid)
-                   .attr("fill","none")
+                   .attr("fill","white")
                    .attr("stroke","blue")
     svg.append("text")
         .attr("x",sw.x+5)
         .attr("y",sw.y)
         .style("stroke-width", 1)
+        .style("font-size",9)
         .attr("color","#000")
         .attr("class","ib-"+sw.dpid)
         .call(lb,switch_info(sw))
@@ -100,6 +106,38 @@ function hide_switch_info(sw) {
     svg.selectAll(".ib-"+sw.dpid).remove()
 
 }
+
+function show_flow_info(flow,mouse) {
+    var svg = d3.select("#graph")
+    var m_coord =[0,0];
+    m_coord = mouse;
+    svg.append("rect").attr("x",m_coord[0])
+                   .attr("y",m_coord[1])
+                   .attr("width","1000")
+                   .attr("height","50")
+                   .attr("class","fib-"+flow.hash)
+                   .attr("fill","white")
+                   .attr("stroke","blue")
+                   .on("click",function(d) {hide_flow_info(flow) });
+    svg.append("text")
+        .attr("x",m_coord[0]+5)
+        .attr("y",m_coord[1])
+        .style("stroke-width", 1)
+        .style("font-size",9)
+        .attr("color","#000")
+        .attr("class","fib-"+flow.hash)
+        .call(lb,flow_info(flow))
+    svg.selectAll(".fib-"+flow.hash).selectAll("tspan").attr("x",m_coord[0]+5)
+}
+
+function hide_flow_info(flow) {
+    var svg = d3.select("#graph")
+    svg.selectAll(".fib-"+flow.hash).remove()
+
+}
+
+
+
 function lb(text_elem,text) {
     /*
      * Create several tspan elements to replace linebreaks.
@@ -118,7 +156,14 @@ function switch_info(sw) {
     /*
      * Parse switch obj into string here
      */
-     return "dpid: "+sw.dpid+"\nports: ?"
+     return "dpid: "+sw.dpid.toString(16)+"\nports: ?"
+}
+
+function flow_info(flow) {
+    /*
+     * Parse switch obj into string here
+     */
+     return "match: "+flow.match+"\nbytes: "+flow.bytes;
 }
 
 
@@ -201,7 +246,7 @@ function sync_flows() {
     var svg = d3.select("#graph");
 	svg.selectAll(".flow").data(this.flows,function(d){return d.hash})
    									.attr("d",function(d){return flow_line_fun(d.path.map(function(e,i){return {"x":e.x+d.scatter_offsets[i].x,"y":e.y+d.scatter_offsets[i].y};}))})
-   									.style("stroke-width",function(d){return Math.min(Math.max(1,d.bytes/(1024*1024)),5)});
+   									.style("stroke-width",function(d){return calc_flow_width(d.bytes)});
 }
 function Switch(dpid) {
     this.dpid = dpid;
@@ -309,12 +354,15 @@ function translate_links(links) {
     for (var key in links) {
         var source = switches[String(links[key].source)];
         var target = switches[String(links[key].target)];
-        nlinks.push(new Link(source,target))
+        if(source!=null && target!=null) {
+			nlinks.push(new Link(source,target));
+		}
     }
     return nlinks
 }
 
 function update_flows(flows) {
+	flows = flows.filter(function(x) { return parseInt(x.bytes)>= parseInt(d3.select("#flowmin").property("value")) });
     translate_flows(flows);
     //hash_flows(flows);
     add_toString(flows);
@@ -327,12 +375,21 @@ function update_flows(flows) {
 	svg.selectAll(".flow").data(flows,function(d){return d.hash}).enter()
 			.append("path")
 			.attr("class","flow")
-            .style("stroke-width",function(d){return Math.min(Math.max(1,d.bytes/(1024*1024)),5)})
+            .style("stroke-width",function(d){return calc_flow_width(d.bytes)})
             .style("fill","none")
             .style("stroke",function(d){return flow_colors(d)})
 			//.attr("d",function(d){return get_flow_path(d)});
+			.on("click",function(d) {show_flow_info(d,d3.mouse(this)) })
+			//.on("mouseout",function(d) {hide_flow_info(d) })
             .attr("d",function(d){return flow_line_fun(d.path.map(function(e,i){return {"x":e.x+d.scatter_offsets[i].x,"y":e.y+d.scatter_offsets[i].y};}))});
     update_layout();
+}
+
+function calc_flow_width(bytes) {
+	maxvis=parseInt(d3.select("#flowmax").property("value"));
+	mins=parseInt(d3.select("#flowmin").property("value"));
+	stepsize = (maxvis-mins)/5;
+	return Math.min(Math.max(1,(bytes-mins)/stepsize),5);
 }
 
 function add_toString(flows) {
@@ -398,9 +455,14 @@ function abort_poll() {
 
 </script>
 </head>
-<body>
-    <form><input value="Update" type="button" onclick="poll_all();"><br><input value="0" size=4 type="text" onchange="set_poll_int();" id="pollint"><input type="button" value="Stop" onclick="abort_poll()"><br>
-    <input type="button" value="Save Layout" onclick="save_positions()"><input type="button" value="Restore Layout" onclick="restore_positions()"></form>
+<body >
+	<div class="controls">
+    <form><input value="Update" type="button" onclick="poll_all();"><br>
+    Update Interval:<input value="0" size=4 type="text" onchange="set_poll_int();" id="pollint"><input type="button" value="Stop" onclick="abort_poll()"><br>
+    <input type="button" value="Save Layout" onclick="save_positions()"><input type="button" value="Restore Layout" onclick="restore_positions()"><br>
+    Minimum Flow Size:<input  size=10 value="0" type="text" id="flowmin"><br>
+    Maximum vis. Flow Size:<input value="5242880" size=10, type="text" id="flowmax">
+    </form></div>
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <svg id="graph" width="100%", height="100%"></svg>
 </body>

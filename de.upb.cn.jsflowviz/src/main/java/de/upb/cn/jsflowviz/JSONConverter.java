@@ -40,7 +40,7 @@ public class JSONConverter {
 		//[{ "name": "hans","path": [1,2,3]},{ "name": "horst","path": [2,3,4]}]
 		String str = "[";
 		for(LinkedList<SwFlowTuple> flow : flows) {
-			str += String.format("{ \"hash\": %d, \"bytes\": %d, \"path\": [",flow.get(0).getFlow().getMatch().hashCode(),flow.get(0).getFlow().getByteCount());
+			str += String.format("{ \"hash\": %d, \"match\": \"%s\", \"bytes\": %d, \"path\": [",flow.get(0).getFlow().getMatch().hashCode(),flow.get(0).getFlow().getMatch().toString(),flow.get(0).getFlow().getByteCount());
 			for(SwFlowTuple tup : flow) {
 				str+=String.format("%d,",tup.getSw().getId());
 			}
