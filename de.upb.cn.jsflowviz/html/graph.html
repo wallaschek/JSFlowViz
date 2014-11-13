@@ -262,6 +262,8 @@ function save_positions() {
 function restore_positions() {
 	var a = document.cookie;
 	for(var key in switches) {
+		if(switches[key]==null)
+			continue;
 		if(a.search("dpid-"+switches[key].dpid+"-x")!=-1) {
 			var x = a.substring(a.search("dpid-"+switches[key].dpid+"-x")+("dpid-"+switches[key].dpid+"-x=").length,a.substring(a.search("dpid-"+switches[key].dpid+"-x")).search(";")+a.search("dpid-"+switches[key].dpid+"-x"));
 			var y = a.substring(a.search("dpid-"+switches[key].dpid+"-y")+("dpid-"+switches[key].dpid+"-y=").length,a.substring(a.search("dpid-"+switches[key].dpid+"-y")).search(";")+a.search("dpid-"+switches[key].dpid+"-y"));
@@ -280,12 +282,12 @@ function update_switches(switches) {
     }
 	var svg = d3.select("#graph")
 	var enter = svg.selectAll("circle").data(aarray_to_list(switches),function(d){return d.dpid}).enter();
+	var exit = svg.selectAll("circle").data(aarray_to_list(switches),function(d){return d.dpid}).exit();
 	for (var x in enter[0]) {
 		if(! isNaN(x)) {
 			this.switches[String(enter[0][x].__data__.dpid)] = new Switch(enter[0][x].__data__.dpid);
 		}
 	}
-	svg.selectAll("circle").data(aarray_to_list(this.switches),function(d){return d.dpid}).exit().remove()
     svg.selectAll("circle").data(aarray_to_list(this.switches),function(d){return d.dpid}).enter()
    								.append("svg:circle")
    									.attr("r", switch_radius)
@@ -298,7 +300,12 @@ function update_switches(switches) {
                                     .on("mouseover",function(d) {show_switch_info(d) })
                                     .on("mouseout",function(d) {hide_switch_info(d) })
                                     ;
-    var x = 1;
+    exit.remove()
+    for (var x in exit[0]) {
+		if(! isNaN(x)) {
+			this.switches[String(exit[0][x].__data__.dpid)] = null;
+		}
+	}
 }
 
 
@@ -324,7 +331,8 @@ function aarray_to_list(aarray) {
      */
     l = [];
     for (key in aarray) {
-        l.push(aarray[key]);
+		if(aarray[key]!=null)
+			l.push(aarray[key]);
     }
     return l;
 }
@@ -357,6 +365,8 @@ function translate_links(links) {
 }
 
 function update_flows(flows) {
+	if(flows==null) 
+		return;
 	flows = flows.filter(function(x) { return parseInt(x.bytes)>= parseInt(d3.select("#flowmin").property("value")) });
     translate_flows(flows);
     //hash_flows(flows);

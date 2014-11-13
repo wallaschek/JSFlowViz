@@ -16,7 +16,9 @@ public class JSONConverter {
 		for ( IOFSwitch sw : switches) {
 			str += String.format("%d,",sw.getId());
 		}
-		str=str.substring(0, str.length()-1)+"]";
+		if(str.length()>1)
+			str=str.substring(0, str.length()-1);
+		str += "]";
 		return str;
 	}
 	
@@ -29,7 +31,9 @@ public class JSONConverter {
 				done.add(li);
 			}
 		}
-		str=str.substring(0, str.length()-1)+"]";
+		if(str.length()>1)
+			str=str.substring(0, str.length()-1);
+		str += "]";
 		return str;
 	}
 	private static LinkTuple swap(LinkTuple p) {
