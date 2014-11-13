@@ -21,10 +21,6 @@
 </style>
 <script type='text/javascript'>
 window.onload=function(){
-	/*
-    d3.json("/wm/jsflowviz/json/switches.do",update_switches);
-	d3.json("/wm/jsflowviz/json/links.do",update_links);
-    */
     poll_all();
     this.flow_line_fun = d3.svg.line()
                     .x(function(d){return d.x})
@@ -48,7 +44,6 @@ function poll_all() {
     d3.json("/wm/jsflowviz/json/switches.do",update_switches);
 	d3.json("/wm/jsflowviz/json/links.do",update_links);
 	d3.json("/wm/jsflowviz/json/flows.do",update_flows);
-    //d3.json("flows.json",update_flows);
 }
 function update_flow_color_scale() {
     this.flow_colors= d3.scale.category20()
