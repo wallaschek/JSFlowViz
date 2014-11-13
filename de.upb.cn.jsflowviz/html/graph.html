@@ -213,6 +213,27 @@ function Switch(dpid) {
 
 }
 
+function save_positions() {
+	for(var key in switches) {
+		document.cookie = "dpid-"+switches[key].dpid+"-x="+switches[key].x+";";
+		document.cookie = "dpid-"+switches[key].dpid+"-y="+switches[key].y+";";
+	}
+}
+function restore_positions() {
+	var a = document.cookie;
+	for(var key in switches) {
+		if(a.search("dpid-"+switches[key].dpid+"-x")!=-1) {
+			var x = a.substring(a.search("dpid-"+switches[key].dpid+"-x")+("dpid-"+switches[key].dpid+"-x=").length,a.substring(a.search("dpid-"+switches[key].dpid+"-x")).search(";")+a.search("dpid-"+switches[key].dpid+"-x"));
+			var y = a.substring(a.search("dpid-"+switches[key].dpid+"-y")+("dpid-"+switches[key].dpid+"-y=").length,a.substring(a.search("dpid-"+switches[key].dpid+"-y")).search(";")+a.search("dpid-"+switches[key].dpid+"-y"));
+			switches[key].x = parseInt(x);
+			switches[key].y = parseInt(y);
+		}
+	}
+	sync_circles();
+	sync_links();
+	sync_flows();
+}
+
 function update_switches(switches) {
     for (key in switches) {
         switches[key] = new Switch(switches[key])
@@ -378,7 +399,8 @@ function abort_poll() {
 </script>
 </head>
 <body>
-    <form><input value="Update" type="button" onclick="poll_all();"><br><input value="0" size=4 type="text" onchange="set_poll_int();" id="pollint"><input type="button" value="Stop" onclick="abort_poll()"</form>
+    <form><input value="Update" type="button" onclick="poll_all();"><br><input value="0" size=4 type="text" onchange="set_poll_int();" id="pollint"><input type="button" value="Stop" onclick="abort_poll()"><br>
+    <input type="button" value="Save Layout" onclick="save_positions()"><input type="button" value="Restore Layout" onclick="restore_positions()"></form>
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <svg id="graph" width="100%", height="100%"></svg>
 </body>
