@@ -1,13 +1,32 @@
 <html>
 <head>
 <style type="text/css">
+
 .link { 
     stroke: black;
     stroke-width: 5px;
     stroke-dasharray: 5;
 }
-.flow {
+.flows1 {
+	stroke-width: 1px;
+}
+.flows2 {
+	stroke-width: 2px;
+}
+.flows3 {
+	stroke-width: 3px;
+}
+.flows4 {
+	stroke-width: 4px;
+}
+.flows5 {
+	stroke-width: 5px;
+}
 
+
+.highlight {
+	stroke-width: 10;
+	stroke-opacity: 0.7;
 }
 
 .switch {
@@ -245,7 +264,8 @@ function filter_links(lks) {
 function sync_flows() {
 	svg.selectAll(".flow").data(this.flows,function(d){return d.hash})
    									.attr("d",function(d){return flow_line_fun(d.path.map(function(e,i){return {"x":e.x+d.scatter_offsets[i].x,"y":e.y+d.scatter_offsets[i].y};}))})
-   									.style("stroke-width",function(d){return calc_flow_width(d.bytes)});
+   									.attr("class",function(d){return "flow flows"+calc_flow_width(d.bytes)});
+	highlight_flows();
 }
 function Switch(dpid) {
     this.dpid = dpid;
@@ -377,11 +397,21 @@ function update_flows(flows) {
     this.flows = flows;
     update_flow_color_scale();
 	var circles = svg.selectAll("circle");
+	var fllist = d3.select("#flowlist");
+	fllist.selectAll(".flowentr").data(flows,function(d){return d.hash}).exit().remove();
+	fllist.selectAll(".flowentr").data(flows,function(d){return d.hash}).enter()
+		.append("option")
+		.attr("class","flowentr")
+		.attr("title",function(d) { return d.match })
+		.attr("id",function(d){return "fllist-"+d.hash})
+		.text(function(d) { return d.match });
+	
 	svg.selectAll(".flow").data(flows,function(d){return d.hash}).exit().remove();
 	svg.selectAll(".flow").data(flows,function(d){return d.hash}).enter()
 			.append("path")
 			.attr("class","flow")
-            .style("stroke-width",function(d){return calc_flow_width(d.bytes)})
+			.attr("id",function(d) {return "h"+String(d.hash)})
+            .attr("class",function(d){return "flow flows"+calc_flow_width(d.bytes)})
             .style("fill","none")
             .style("stroke",function(d){return flow_colors(d)})
 			//.attr("d",function(d){return get_flow_path(d)});
@@ -391,6 +421,15 @@ function update_flows(flows) {
     update_layout();
 }
 
+function highlight_flows() {
+	var fllist = d3.select("#flowlist")
+	fllist.selectAll(".flowentr").each(function(d) { highlight_flow(d.hash,fllist.select("#fllist-"+d.hash).property("selected"))});
+}
+
+function highlight_flow(hash,b) {
+	var fl = svg.select("#h"+String(hash))
+	fl.classed("highlight",b);
+}
 function calc_flow_width(bytes) {
 	maxvis=parseInt(d3.select("#flowmax").property("value"));
 	mins=parseInt(d3.select("#flowmin").property("value"));
@@ -471,5 +510,6 @@ function abort_poll() {
     Minimum Flow Size:<input  size=10 value="0" type="text" id="flowmin"><br>
     Maximum vis. Flow Size:<input value="5242880" size=10, type="text" id="flowmax">
     </form></div>
+<div style="width:700px; position: absolute; top:10px; left:400px"><form><select onchange="highlight_flows();" id="flowlist" name="flows" size=7></select></form></div>
 </body>
 </html>
