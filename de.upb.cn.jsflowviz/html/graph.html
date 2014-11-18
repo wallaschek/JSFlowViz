@@ -57,8 +57,6 @@ function update_flow_color_scale() {
 function update_layout() {
     this.force = d3.layout.force()
                 .size([1200, 1200])
-                .charge(-400)
-                .friction(0.1)
                 .nodes(switches)
                 .links(links)
                 .distance("100")
