@@ -462,13 +462,14 @@ function abort_poll() {
 </script>
 </head>
 <body >
-	<div class="controls">
+	
+<svg width="100%" height="100%" id="graph-svg"><g id="graph"></g></svg>
+<div style="width:300px; position:absolute; top:10px; left:10px" class="controls">
     <form><input value="Update" type="button" onclick="poll_all();"><br>
     Update Interval:<input value="0" size=4 type="text" onchange="set_poll_int();" id="pollint"><input type="button" value="Stop" onclick="abort_poll()"><br>
     <input type="button" value="Save Layout" onclick="save_positions()"><input type="button" value="Restore Layout" onclick="restore_positions()"><br>
     Minimum Flow Size:<input  size=10 value="0" type="text" id="flowmin"><br>
     Maximum vis. Flow Size:<input value="5242880" size=10, type="text" id="flowmax">
     </form></div>
-<svg id="graph-svg" width="100%" height="100%"><g id="graph"></g></svg>
 </body>
 </html>
