@@ -19,9 +19,14 @@
 	font-size: small;
 }
 </style>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script type='text/javascript'>
 window.onload=function(){
     poll_all();
+    svg = d3.select("#graph")
+	this.zoom = d3.behavior.zoom()
+		.scaleExtent([0, 10]).on("zoom", zoomed);
+    d3.select("#graph-svg").call(zoom)
     this.flow_line_fun = d3.svg.line()
                     .x(function(d){return d.x})
                     .y(function(d){return d.y})
@@ -38,7 +43,7 @@ var flow_colors;
 
 var switch_radius=20;
 var scatter_max = 15;
-
+var svg = d3.select("#graph");
 function poll_all() {
     update_layout();
     d3.json("/wm/jsflowviz/json/switches.do",update_switches);
@@ -76,9 +81,15 @@ function len(aarray) {
     }
     return i;
 }
+function zoomed() {
+  svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+}
+function reset_zoom() {
+  this.zoom.scale(1);
+  this.zoom.translate([0,0]);
+}
 
 function show_switch_info(sw) {
-    var svg = d3.select("#graph")
     svg.append("rect").attr("x",sw.x)
                    .attr("y",sw.y)
                    .attr("width","100")
@@ -98,13 +109,11 @@ function show_switch_info(sw) {
 }
 
 function hide_switch_info(sw) {
-    var svg = d3.select("#graph")
     svg.selectAll(".ib-"+sw.dpid).remove()
 
 }
 
 function show_flow_info(flow,mouse) {
-    var svg = d3.select("#graph")
     var m_coord =[0,0];
     m_coord = mouse;
     svg.append("rect").attr("x",m_coord[0])
@@ -127,7 +136,6 @@ function show_flow_info(flow,mouse) {
 }
 
 function hide_flow_info(flow) {
-    var svg = d3.select("#graph")
     svg.selectAll(".fib-"+flow.hash).remove()
 
 }
@@ -166,20 +174,19 @@ function flow_info(flow) {
 
 
 function drag_start(d) {
-    
-    d.fixed=true;
+    d3.event.sourceEvent.stopPropagation();
+    //d.fixed=true;
 }
 function drag_stop(d) {
-    force.stop();
+    //force.stop();
 }
 function sync_dragging(d,i) {
-	this.fixed=true;
-	d.fixed=true;
+	//this.fixed=true;
+	//d.fixed=true;
     d.x+=d3.event.dx;
     d.y+=d3.event.dy;
 }
 function sync_circles() {
-    var svg = d3.select("#graph")
     /*
      * attr is eating cpu like hell. however i found no way to improve this.
      * I tried linking the Switch objects to their corresponding circles
@@ -221,7 +228,6 @@ function set_new_pos(sws) {
 }
 
 function sync_links() {
-    var svg = d3.select("#graph")
     var lks = filter_links(this.links); // only update links of switches which positions have changed
 	svg.selectAll(".link").data(lks,function(d){return String(d.source.dpid)+String(d.target.dpid)})
    									.attr("d",function(d){return get_path(d)});
@@ -239,7 +245,6 @@ function filter_links(lks) {
 	return nlks;
 }
 function sync_flows() {
-    var svg = d3.select("#graph");
 	svg.selectAll(".flow").data(this.flows,function(d){return d.hash})
    									.attr("d",function(d){return flow_line_fun(d.path.map(function(e,i){return {"x":e.x+d.scatter_offsets[i].x,"y":e.y+d.scatter_offsets[i].y};}))})
    									.style("stroke-width",function(d){return calc_flow_width(d.bytes)});
@@ -247,7 +252,7 @@ function sync_flows() {
 function Switch(dpid) {
     this.dpid = dpid;
     this.x = Math.random()*500;
-    this.y = min(10,Math.random()*500);
+    this.y = Math.max(10,Math.random()*500);
     this.px = this.x;
     this.py = this.y;
     this.weight = 2;
@@ -281,7 +286,6 @@ function update_switches(switches) {
     for (key in switches) {
         switches[key] = new Switch(switches[key])
     }
-	var svg = d3.select("#graph")
 	var enter = svg.selectAll("circle").data(aarray_to_list(switches),function(d){return d.dpid}).enter();
 	var exit = svg.selectAll("circle").data(aarray_to_list(switches),function(d){return d.dpid}).exit();
 	for (var x in enter[0]) {
@@ -340,7 +344,6 @@ function aarray_to_list(aarray) {
 
 function update_links(links) {
     this.links = translate_links(links);
-	var svg = d3.select("#graph");
 	var circles = svg.selectAll("circle");
 	svg.selectAll(".link").data(this.links,function(d){return String(d.source.dpid)+String(d.target.dpid)}).exit().remove()
 	svg.selectAll(".link").data(this.links,function(d){return String(d.source.dpid)+String(d.target.dpid)}).enter()
@@ -375,7 +378,6 @@ function update_flows(flows) {
     add_scatter_offsets(flows,scatter_max,scatter_max);
     this.flows = flows;
     update_flow_color_scale();
-	var svg = d3.select("#graph");
 	var circles = svg.selectAll("circle");
 	svg.selectAll(".flow").data(flows,function(d){return d.hash}).exit().remove();
 	svg.selectAll(".flow").data(flows,function(d){return d.hash}).enter()
@@ -466,10 +468,10 @@ function abort_poll() {
     <form><input value="Update" type="button" onclick="poll_all();"><br>
     Update Interval:<input value="0" size=4 type="text" onchange="set_poll_int();" id="pollint"><input type="button" value="Stop" onclick="abort_poll()"><br>
     <input type="button" value="Save Layout" onclick="save_positions()"><input type="button" value="Restore Layout" onclick="restore_positions()"><br>
+    <input type="button" value="Reset Zoom" onclick="reset_zoom()">
     Minimum Flow Size:<input  size=10 value="0" type="text" id="flowmin"><br>
     Maximum vis. Flow Size:<input value="5242880" size=10, type="text" id="flowmax">
     </form></div>
-<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-<svg id="graph" width="100%", height="100%"></svg>
+<svg id="graph-svg" width="100%" height="100%"><g id="graph"></g></svg>
 </body>
 </html>
