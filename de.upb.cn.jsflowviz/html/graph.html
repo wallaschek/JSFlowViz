@@ -57,6 +57,7 @@ function update_layout() {
                 .nodes(switches)
                 .links(links)
                 .distance("100")
+                .linkStrength(0.0)
                 .on("tick",function(d) { sync_circles(); sync_links(); sync_flows() });
     if(len(switches) > 0 ) {
         this.force.start();
@@ -246,7 +247,7 @@ function sync_flows() {
 function Switch(dpid) {
     this.dpid = dpid;
     this.x = Math.random()*500;
-    this.y = Math.random()*500;
+    this.y = min(10,Math.random()*500);
     this.px = this.x;
     this.py = this.y;
     this.weight = 2;
