@@ -24,6 +24,11 @@ it disappear.
 of transferred bytes. Adapt the "Maximum vis. Flow Size" value to change the rate
 at which the stroke of a flow grows.
 
+**Q:** Why is the shown network entangled whenever i open the view?  
+**A:** JSFlowViz does not do useful switch placement. You have to disentangle the switches
+by hand and then save their positions via the "Save Layout" button. The layout
+is stored in  a cookie and can be restored with the "Restore Layout" button.
+
 ### Warnings
 
 JSFlowViz is not under active development anymore. The client side js code is
