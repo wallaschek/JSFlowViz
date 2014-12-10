@@ -32,4 +32,5 @@ is stored in  a cookie and can be restored with the "Restore Layout" button.
 ### Warnings
 
 JSFlowViz is not under active development anymore. The client side js code is
-rather inefficent and might contain bugs. Use with caution.
+rather inefficent and might contain bugs. Be aware that this is more of a proof-of-concept
+and not production ready code. Use with caution.
